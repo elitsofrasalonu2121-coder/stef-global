@@ -3,3 +3,5 @@ folium
 streamlit-folium
 matplotlib
 numpy
+pandas
+seaborn
