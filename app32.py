@@ -2,123 +2,132 @@ import streamlit as st
 import folium
 from streamlit_folium import st_folium
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
-import time
+import seaborn as sns
 
-# --- SAYFA AYARLARI ---
-st.set_page_config(layout="wide", page_title="STEF Global v9.0", page_icon="🌍")
+# Sayfa Ayarları
+st.set_page_config(
+    layout="wide", 
+    page_title="STEF Global | Elite Analysis", 
+    page_icon="🧬",
+    initial_sidebar_state="collapsed"
+)
 
-# --- CSS TASARIM ---
+# Profesyonel "Midnight Slate" Teması (Göz yormayan gri-lacivert)
 st.markdown("""
 <style>
-    .stApp { background-color: #0f172a; color: white; }
-    section[data-testid="stSidebar"] { background-color: #0b1120; border-right: 1px solid #1e293b; }
-    .report-box { border: 2px solid white; padding: 20px; background-color: #1e293b; color: white; font-family: monospace; border-radius: 10px;}
-    h1, h2, h3 { color: #22d3ee !important; }
+    .stApp { background-color: #0f172a; color: #cbd5e1; }
+    section[data-testid="stSidebar"] { background-color: #020617; border-right: 1px solid #1e293b; }
+    h1, h2, h3, h4 { color: #38bdf8 !important; }
+    div[data-testid="metric-container"] { background-color: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 10px; }
+    .stTabs [data-baseweb="tab"] { color: #94a3b8; }
+    .stTabs [aria-selected="true"] { color: #38bdf8 !important; border-bottom: 2px solid #38bdf8; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- YAN PANEL (MANİFESTO) ---
+# --- SIDEBAR (HAMBURGER MENÜ) ---
 with st.sidebar:
-    st.title("🧬 Project DNA")
-    st.caption("Sustainable Thermal & Ecosystem Forecasting System")
+    st.title("🧬 STEF GLOBAL")
+    st.caption("Scientific Decision Support System")
+    st.markdown("---")
     
-    with st.expander("🌍 Why This Project?", expanded=True):
-        st.markdown("""
-        **1. Early Warning:** STEF predicts metabolic collapse *before* mass mortality occurs.
-        **2. Starvation Penalty:** Proves that nutritional stress reduces thermal tolerance by **1.07°C**.
-        **3. Economic Shield:** Protects the $400B aquaculture industry via AI-driven policy.
-        """)
-    
-    st.markdown("### 🧪 Algorithms")
-    st.latex(r"SMR = a \cdot M^{b} \cdot e^{-E/kT}")
-    st.info("PRISMA Meta-Analysis: N=68 Papers")
+    with st.expander("🌍 PROJECT MISSION", expanded=True):
+        st.write("**Target:** *Mugil cephalus*")
+        st.write("Modeling the 'Invisible Collapse' through metabolic energy budgets.")
+
+    with st.expander("📚 LITERATURE DATABASE (N=68)"):
+        refs = pd.DataFrame({
+            "ID": ["REF-01", "REF-02", "REF-03", "REF-04", "REF-05"],
+            "Author": ["Pörtner et al.", "Cheung & Pauly", "Claireaux & Lefrançois", "Fry, F.E.J.", "STEF Team"],
+            "Finding": ["Oxygen Limitation", "Gill Theory", "Aerobic Scope", "Metabolic Framework", "Starvation Penalty"]
+        })
+        st.dataframe(refs, hide_index=True)
+
+    with st.expander("🧮 ALGORITHMS"):
+        st.latex(r"SMR = a \cdot M^{b} \cdot e^{-E/kT}")
+        st.write("Starvation Penalty:")
+        st.latex(r"T_{crit} = T_{opt} - 1.07 \cdot (1 - NI)")
 
 # --- ANA EKRAN ---
-st.title("STEF GLOBAL 🌍")
-st.markdown("**Real-Time Metabolic Intelligence System** | *Powered by Python*")
+st.title("STEF GLOBAL: Ecosystem Intelligence")
 
-col1, col2 = st.columns([1, 2])
+c1, c2 = st.columns([1, 1])
+with c1:
+    scenario = st.selectbox("CLIMATE SCENARIO", ["Present Day", "SSP1-2.6 (+1.5°C)", "SSP5-8.5 (+3.2°C)"])
+with c2:
+    ni = st.slider("NUTRITIONAL INDEX (NI)", 0.0, 1.0, 1.0, 0.1)
+    if ni < 0.4: st.error("⚠️ STARVATION PENALTY ACTIVE (-1.07°C)")
 
-with col1:
-    st.subheader("⚙️ Simulation Lab")
-    scenario = st.selectbox("IPCC Scenario", ["Present Day", "SSP1-2.6 (+1.5°C)", "SSP5-8.5 (+3.2°C)"])
-    temp_shift = 1.5 if "1.5" in scenario else (3.2 if "3.2" in scenario else 0.0)
-    
-    st.markdown("---")
-    ni = st.slider("Nutritional Index (NI)", 0.0, 1.0, 1.0, 0.1)
-    
-    if ni < 0.4:
-        st.error("⚠️ STARVATION PENALTY APPLIED (-1.07°C)")
-    else:
-        st.success("✅ OPTIMAL NUTRITION")
+# Harita
+m = folium.Map(location=[36, 30], zoom_start=4, tiles="OpenStreetMap")
+output = st_folium(m, width=900, height=400, key="stef_map")
 
-with col2:
-    # Gri kutu sorununu çözen standart harita
-    m = folium.Map(location=[20, 0], zoom_start=2)
-    output = st_folium(m, width=700, height=400, key="stef_map")
-
-# --- HESAPLAMA MOTORU ---
+# --- ANALİZ MOTORU ---
 if output['last_clicked']:
     lat, lng = output['last_clicked']['lat'], output['last_clicked']['lng']
     
-    # Fiziksel Hesap
-    base_temp = 28 * np.cos(np.deg2rad(lat)) + 5 + temp_shift
-    temp = max(15, min(35, base_temp))
+    temp_shift = 1.5 if "1.5" in scenario else (3.2 if "3.2" in scenario else 0.0)
+    base_t = 28 * np.cos(np.deg2rad(lat)) + 5 + temp_shift
+    T = max(10, min(36, base_t))
     
-    # Risk Hesabı
     limit = 30.4 if ni < 0.4 else 31.5
-    risk = (temp/25)*30 if temp < 25 else (30+((temp-25)/(limit-25))*60 if temp < limit else 100)
-    risk = min(100, int(risk))
-    
-    # Sonuçlar
-    st.markdown("---")
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Temperature", f"{temp:.1f}°C")
-    m2.metric("Risk Score", f"{risk}%")
-    m3.metric("Status", "CRITICAL" if risk > 90 else ("STRESS" if risk > 40 else "OPTIMAL"))
-    
-    # Grafik ve Rapor
-    c1, c2 = st.columns([2, 1])
-    
-    with c1:
-        st.subheader("📈 Metabolic Trend")
-        x = np.linspace(15, 35, 100)
-        y = 50 * np.exp(0.09 * (x - 15))
-        
-        fig, ax = plt.subplots(figsize=(8, 4))
-        fig.patch.set_facecolor('#0f172a')
-        ax.set_facecolor('#0f172a')
-        
-        ax.plot(x, y, color="#22d3ee", lw=3, label="Metabolic Demand")
-        ax.axvline(x=limit, color="white", linestyle="--", alpha=0.5, label="Collapse Threshold")
-        
-        # Hareketli Nokta
-        curr_y = 50 * np.exp(0.09 * (temp - 15))
-        p_color = "#ef4444" if risk > 80 else "#22d3ee"
-        ax.scatter([temp], [curr_y], color=p_color, s=200, edgecolor='white', zorder=5)
-        
-        ax.set_xlabel("Temperature (°C)", color='white')
-        ax.tick_params(colors='white')
-        ax.grid(alpha=0.1)
-        ax.legend(facecolor='#1e293b', labelcolor='white')
-        st.pyplot(fig)
-        
-    with c2:
-        st.subheader("📑 Official Report")
-        status_text = "FISHING BAN" if risk > 90 else ("REDUCE EFFORT" if risk > 40 else "MONITOR")
-        st.markdown(f"""
-        <div class="report-box">
-            <h4>STEF ANALYSIS</h4>
-            <p>ID: #AX-{int(time.time())}</p>
-            <p>LOC: {lat:.2f}, {lng:.2f}</p>
-            <p>TEMP: {temp:.1f}°C</p>
-            <hr>
-            <p style="color: {'#ef4444' if risk > 90 else '#22d3ee'}">
-            <b>DECISION: {status_text}</b>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+    risk = int(min(100, (T/limit)*100 if T < limit else 100))
 
+    st.markdown("---")
+    st.subheader(f"📊 6-CORE ANALYSIS DASHBOARD ({lat:.2f}, {lng:.2f})")
+    
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Temperature", f"{T:.1f} °C", f"+{temp_shift}°C")
+    m2.metric("Risk Score", f"{risk}%", "Metabolic Load")
+    m3.metric("Status", "CRITICAL" if risk > 85 else "STABLE")
+
+    tabs = st.tabs(["📈 Metabolic", "🩸 Oxygen", "📉 Threshold", "🗓️ Annual", "🛡️ Margin", "💀 Survival"])
+    plt.style.use('dark_background')
+
+    # 1. Metabolic
+    with tabs[0]:
+        fig, ax = plt.subplots(figsize=(8, 3))
+        x = np.linspace(10, 36, 100); y = 50 * np.exp(0.08 * (x - 10))
+        ax.plot(x, y, color="#38bdf8", lw=3); ax.axvline(limit, color="red", ls="--")
+        ax.scatter([T], [50 * np.exp(0.08 * (T - 10))], color="red", s=100)
+        st.pyplot(fig)
+
+    # 2. Oxygen
+    with tabs[1]:
+        fig, ax = plt.subplots(figsize=(8, 3))
+        x = np.linspace(10, 36, 100)
+        ax.plot(x, 14 * np.exp(-0.02 * x), color="#4ade80", label="Supply")
+        ax.plot(x, 2 * np.exp(0.09 * x), color="#f472b6", label="Demand")
+        ax.legend(); st.pyplot(fig)
+
+    # 3. Threshold
+    with tabs[2]:
+        fig, ax = plt.subplots(figsize=(8, 2))
+        ax.barh(["Critical Limit"], [limit], color="#fbbf24")
+        ax.set_xlim(20, 35); st.pyplot(fig)
+
+    # 4. Annual
+    with tabs[3]:
+        fig, ax = plt.subplots(figsize=(8, 3))
+        m_x = np.arange(1, 13); t_y = T + 5 * np.sin((m_x - 5) * np.pi / 6)
+        ax.plot(m_x, t_y, marker='o', color="#38bdf8"); ax.axhline(limit, color="red", ls="--")
+        st.pyplot(fig)
+
+    # 5. Margin
+    with tabs[4]:
+        fig, ax = plt.subplots(figsize=(8, 2))
+        margin = limit - T
+        ax.barh(["Safety Margin"], [margin], color="green" if margin > 2 else "red")
+        ax.set_xlim(-2, 10); st.pyplot(fig)
+
+    # 6. Survival
+    with tabs[5]:
+        fig, ax = plt.subplots(figsize=(8, 3))
+        years = np.arange(2026, 2036); pop = 100 * np.exp(-(0.05 + risk/500) * (years - 2026))
+        ax.plot(years, pop, color="#a78bfa", lw=3); st.pyplot(fig)
+
+    if st.button("📄 GENERATE REPORT"):
+        st.success("Analysis finalized for the official record.")
 else:
-    st.info("👆 Click on the map to start the analysis.")
+    st.info("👆 Please click on a marine location on the map.")
